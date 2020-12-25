@@ -1,0 +1,204 @@
+#
+# email regex https://www.w3resource.com/javascript/form/email-validation.php
+# id regex https://stackoverflow.com/questions/7905929/how-to-test-valid-uuid-guid
+# CSE183 Assignment 8
+#
+
+openapi: '3.0.3'
+
+info:
+  description: CSE183 Assignment 9
+  version: 0.1.0
+  title: CSE183 Assignment 9
+
+servers:
+  - url: http://localhost:3010
+
+paths:
+  /v0/mail:
+    get:
+      description: Returns all EMail
+      parameters:
+      - name: mailbox
+        in: query
+        description: Mailbox type
+        required: false
+        schema:
+          type: string
+      responses:
+        200:
+          description: Email Response
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/EmailsResponse'
+                - $ref: '#/components/schemas/Mailbox'
+    post:
+      description: Creates a new email
+      requestBody:
+        description: Application to add
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Mailbox'
+              pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$'
+      responses:
+        201:
+          description: Application response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mailbox'
+        409:
+          description: Conflict. Requested ISBN in use.
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+       
+  /v0/mail/{id}:
+    get:
+      description: Returns a mail
+      parameters:
+      - name: id
+        in: path
+        description: id of email
+        required: true
+        schema:
+          type: string
+          pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$'
+      responses:
+        200:
+          description: Mailbox found
+          content:
+            application/json:
+              schema:
+               oneOf:
+                - $ref: '#/components/schemas/EmailsResponse'
+                - $ref: '#/components/schemas/Mailbox'
+        404:
+          description: Mailbox not found
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      description: Moves a mail
+      parameters:
+      - name: id
+        in: path
+        description: id of email
+        required: true
+        schema:
+          type: string
+      - name: mailbox
+        in: query
+        description: mailbox type
+        required: true
+        schema:
+          type: string
+      - name: starred
+        in: query
+        description: star check
+        required: true
+        schema:
+          type: boolean
+      responses:
+        204:
+          description: Mailbox found
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - type: string
+                - type: object
+                - $ref: '#/components/schemas/EmailsResponse'
+        404:
+          description: Mailbox not found
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Error:
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+
+    EmailsResponse:
+      type: array
+      items:
+        type: object
+      properties:
+        emails: 
+          type: array
+          items:
+            $ref: '#/components/schemas/Email'
+
+    Email:
+      type: object
+      properties:
+        id:
+          type: string
+        to-name:
+          type: string
+        to-email:
+          type: string
+        subject:
+          type: string
+        recieved:
+          type: string
+        content:
+          type: string
+        from-name:
+          type: string
+        from-email:
+          type: string
+        starred:
+          type: boolean
+        readCheck:
+          type: boolean
+      required:
+        - id
+        - to-name 
+        - subject 
+        - to-email
+
+    Mailbox:
+      type: object
+      properties:
+        to-name:
+          type: string
+        to-email:
+          type: string
+          pattern: '^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$'
+        subject:
+          type: string
+        content:
+          type: string
+
+  securitySchemes:
+    bearerAuth:            # arbitrary name for the security scheme
+      type: http
+      scheme: bearer
+      bearerFormat: JWT    # optional, arbitrary value for documentation purposes
+
+security:
+  - bearerAuth: []         # use the same name as above
